@@ -1,0 +1,16 @@
+
+.venv/
+__pycache__/
+*.pyc
+
+faces/
+attendance.db
+face_model.yml
+labels.txt
+
+.env
+
+Python Attendance Project_files/
+Python Attendance Project.html
+desktop.ini
+tempCodeRunnerFile.py
