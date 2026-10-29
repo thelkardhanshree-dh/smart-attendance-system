@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Smart Attendance{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+      
+</head>
+<body>
+{% if session.get('logged_in') %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">SA</span><span>Smart Attendance<small>ADMIN PORTAL</small></span></a>
+    <div class="nav-label">WORKSPACE</div>
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span>▦</span> Dashboard</a>
+    <a class="nav-link {% if request.endpoint in ['students','edit_student'] %}active{% endif %}" href="{{ url_for('students') }}"><span>♙</span> Student Records</a>
+    <a class="nav-link {% if request.endpoint == 'attendance' %}active{% endif %}" href="{{ url_for('attendance') }}"><span>▤</span> Attendance Records</a>
+    <div class="nav-label">TOOLS</div>
+    <a class="nav-link" href="{{ url_for('export_students') }}"><span>⇩</span> Export Students</a>
+    <a class="nav-link" href="{{ url_for('export_csv') }}"><span>⇩</span> Export Attendance</a>
+    <div class="sidebar-bottom"><div class="admin-avatar">A</div><div class="admin-meta"><b>Administrator</b><small>Local system</small></div><form action="{{ url_for('logout') }}" method="post"><button class="logout" title="Sign out">↪</button></form></div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar"><div><div class="eyebrow">SMART ATTENDANCE SYSTEM</div><div class="top-title">{% block page_heading %}Dashboard{% endblock %}</div></div><div class="top-actions"><span class="status-dot"></span><span>Local server</span><span class="date-pill">{{ now_date if now_date else '' }}</span></div></header>
+    <section class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+      {% block content %}{% endblock %}
+    </section>
+    <footer class="footer">Smart Attendance System <span>•</span> Local administrative dashboard</footer>
+  </main>
+</div>
+{% else %}{% block logged_out %}{% endblock %}{% endif %}
+</body></html>

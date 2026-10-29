@@ -1,0 +1,343 @@
+
+:root {
+    --primary: #1d4ed8;
+    --primary-dark: #173b83;
+    --background: #f3f6fb;
+    --surface: #ffffff;
+    --text: #172b4d;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --success: #059669;
+    --danger: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    line-height: 1.5;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 245px;
+    padding: 28px 18px;
+    background: #142b4a;
+    color: white;
+    overflow-y: auto;
+}
+
+.sidebar h2 {
+    margin: 0 0 6px;
+    font-size: 21px;
+}
+
+.sidebar p {
+    color: #b8c8df;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.sidebar a {
+    display: block;
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 8px;
+    color: #e8effa;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: #28548b;
+    text-decoration: none;
+}
+
+.main-content {
+    margin-left: 245px;
+    padding: 30px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 26px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.subtitle {
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin: 24px 0;
+}
+
+.card,
+.panel {
+    padding: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(25, 45, 80, 0.05);
+}
+
+.card .label {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.card .value {
+    margin-top: 8px;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.card .hint {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.panel {
+    margin: 20px 0;
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 19px;
+}
+
+.btn,
+button {
+    display: inline-block;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    font: inherit;
+}
+
+.btn:hover,
+button:hover {
+    background: var(--primary-dark);
+    text-decoration: none;
+}
+
+input,
+select {
+    max-width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+th,
+td {
+    padding: 13px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    background: #edf3fc;
+    color: #24436d;
+}
+
+tr:hover td {
+    background: #f8fafc;
+}
+
+.status-present {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.status-absent {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.form-group {
+    margin: 16px 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sidebar {
+        width: 190px;
+    }
+
+    .main-content {
+        margin-left: 190px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 650px) {
+    .sidebar {
+        position: static;
+        width: 100%;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 16px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+/* Fix sidebar overlapping the dashboard */
+.app-shell {
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    z-index: 1000;
+}
+
+.main-content {
+    margin-left: 250px !important;
+    width: calc(100% - 250px);
+    min-width: 0;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+/* Keep dashboard cards and charts inside the content area */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.panel {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+img, canvas {
+    max-width: 100%;
+}
+
+@media (max-width: 750px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+        padding: 16px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+/* FINAL FIX: sidebar and dashboard side by side */
+.app-shell {
+    display: grid !important;
+    grid-template-columns: 250px minmax(0, 1fr) !important;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.app-shell > .sidebar {
+    position: sticky !important;
+    top: 0;
+    left: auto !important;
+    width: 250px !important;
+    height: 100vh;
+    min-height: 100vh;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.app-shell > main,
+.app-shell > .main-content,
+.app-shell > .content,
+.app-shell > .page-content {
+    grid-column: 2;
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-width: 0;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 750px) {
+    .app-shell {
+        grid-template-columns: 1fr !important;
+    }
+
+    .app-shell > .sidebar {
+        position: relative !important;
+        width: 100% !important;
+        height: auto;
+        min-height: 0;
+    }
+
+    .app-shell > main,
+    .app-shell > .main-content,
+    .app-shell > .content,
+    .app-shell > .page-content {
+        grid-column: 1;
+        padding: 16px;
+    }
+}

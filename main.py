@@ -1,4 +1,3 @@
-
 import cv2
 import os
 import csv
@@ -6,10 +5,14 @@ import sqlite3
 import smtplib
 import tkinter as tk
 import numpy as np
+import calendar
+from datetime import date
 
 from datetime import datetime
 from tkinter import messagebox, simpledialog, ttk
 from email.message import EmailMessage
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # ---------------- CONFIGURATION ----------------
 
@@ -429,6 +432,157 @@ def recognize_face():
         cv2.destroyAllWindows()
 
 
+
+# ---------------- ATTENDANCE ANALYTICS ----------------
+
+def attendance_analytics():
+    """Show daily/monthly attendance charts using actual SQLite records."""
+    analytics = tk.Toplevel(root)
+    analytics.title("Attendance Analytics")
+    analytics.geometry("1100x760")
+    analytics.minsize(900, 650)
+
+    now = datetime.now()
+    controls = ttk.Frame(analytics, padding=10)
+    controls.pack(fill="x")
+
+    ttk.Label(controls, text="Month:").pack(side="left", padx=(0, 5))
+    month_var = tk.StringVar(value=f"{now.month:02d}")
+    month_box = ttk.Combobox(
+        controls, textvariable=month_var, state="readonly", width=5,
+        values=[f"{m:02d}" for m in range(1, 13)]
+    )
+    month_box.pack(side="left", padx=(0, 15))
+
+    ttk.Label(controls, text="Year:").pack(side="left", padx=(0, 5))
+    year_var = tk.StringVar(value=str(now.year))
+    year_box = ttk.Combobox(
+        controls, textvariable=year_var, state="readonly", width=7,
+        values=[str(y) for y in range(now.year - 5, now.year + 2)]
+    )
+    year_box.pack(side="left", padx=(0, 15))
+
+    summary = ttk.Label(analytics, text="", font=("Arial", 11, "bold"), padding=10)
+    summary.pack(fill="x")
+
+    chart_frame = ttk.Frame(analytics, padding=(10, 0, 10, 5))
+    chart_frame.pack(fill="both", expand=True)
+
+    note = ttk.Label(
+        analytics,
+        text=("Note: Absent = registered students minus students marked Present, "
+              "calculated only for dates with at least one attendance record. "
+              "Days with no records are omitted; holidays/non-working days are not inferred."),
+        wraplength=1050, justify="left", padding=10
+    )
+    note.pack(fill="x")
+
+    def refresh_analytics():
+        try:
+            selected_month = int(month_var.get())
+            selected_year = int(year_var.get())
+        except ValueError:
+            messagebox.showerror("Invalid period", "Select a valid month and year.", parent=analytics)
+            return
+
+        with connect_db() as con:
+            total_students = con.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+            today = datetime.now().strftime("%Y-%m-%d")
+            today_present = con.execute(
+                "SELECT COUNT(DISTINCT student_id) FROM attendance "
+                "WHERE date=? AND status='Present'", (today,)
+            ).fetchone()[0]
+
+            month_prefix = f"{selected_year:04d}-{selected_month:02d}"
+            rows = con.execute(
+                "SELECT date, COUNT(DISTINCT CASE WHEN status='Present' THEN student_id END) "
+                "AS present FROM attendance WHERE date LIKE ? GROUP BY date ORDER BY date",
+                (month_prefix + "-%",)
+            ).fetchall()
+
+            student_rows = con.execute(
+                "SELECT s.student_id, s.name, "
+                "COUNT(DISTINCT CASE WHEN a.status='Present' AND a.date LIKE ? THEN a.date END) "
+                "AS present_days "
+                "FROM students s LEFT JOIN attendance a ON s.student_id=a.student_id "
+                "GROUP BY s.student_id, s.name ORDER BY s.name",
+                (month_prefix + "-%",)
+            ).fetchall()
+
+        recorded_dates = [row[0] for row in rows]
+        present_counts = [int(row[1] or 0) for row in rows]
+        absent_counts = [max(total_students - count, 0) for count in present_counts]
+        rates = [(count / total_students * 100) if total_students else 0 for count in present_counts]
+        avg_rate = (sum(rates) / len(rates)) if rates else 0
+        today_absent = max(total_students - today_present, 0)
+        summary.config(
+            text=(f"Registered students: {total_students}     |     "
+                  f"Present today: {today_present}     |     "
+                  f"Not marked present today: {today_absent}     |     "
+                  f"Average attendance on recorded days ({month_prefix}): {avg_rate:.1f}%")
+        )
+
+        for child in chart_frame.winfo_children():
+            child.destroy()
+
+        fig = Figure(figsize=(10, 6), dpi=100, constrained_layout=True)
+        ax_daily = fig.add_subplot(211)
+        ax_monthly = fig.add_subplot(212)
+
+        if recorded_dates:
+            labels = [datetime.strptime(d, "%Y-%m-%d").strftime("%d %b") for d in recorded_dates]
+            x = np.arange(len(labels))
+            width = 0.38
+            ax_daily.bar(x - width / 2, present_counts, width, label="Present")
+            ax_daily.bar(x + width / 2, absent_counts, width, label="Absent / not marked present")
+            ax_daily.set_xticks(x)
+            ax_daily.set_xticklabels(labels, rotation=45, ha="right")
+            ax_daily.set_ylabel("Number of students")
+            ax_daily.set_title(f"Daily Attendance — {calendar.month_name[selected_month]} {selected_year}")
+            ax_daily.legend(loc="upper right")
+            ax_daily.grid(axis="y", alpha=0.25)
+
+            ax_monthly.plot(labels, rates, marker="o", linewidth=2, label="Attendance rate")
+            ax_monthly.set_ylim(0, 100)
+            ax_monthly.set_ylabel("Attendance (%)")
+            ax_monthly.set_title("Attendance Rate Trend")
+            ax_monthly.tick_params(axis="x", rotation=45)
+            ax_monthly.grid(True, alpha=0.25)
+            ax_monthly.legend(loc="best")
+        else:
+            ax_daily.text(0.5, 0.5, "No attendance records for this month", ha="center", va="center")
+            ax_daily.set_axis_off()
+            ax_monthly.set_axis_off()
+
+        canvas = FigureCanvasTkAgg(fig, master=chart_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        # Refresh the student-wise table in the same analytics window.
+        for item in student_table.get_children():
+            student_table.delete(item)
+        days_with_records = len(recorded_dates)
+        for student_id, name, present_days in student_rows:
+            present_days = int(present_days or 0)
+            pct = (present_days / days_with_records * 100) if days_with_records else 0
+            student_table.insert("", "end", values=(student_id, name, present_days, f"{pct:.1f}%"))
+
+    ttk.Button(controls, text="Update Charts", command=refresh_analytics).pack(side="left")
+
+    table_frame = ttk.LabelFrame(analytics, text="Student-wise Monthly Attendance", padding=8)
+    table_frame.pack(fill="x", padx=10, pady=(0, 8))
+    student_table = ttk.Treeview(
+        table_frame, columns=("ID", "Name", "Present Days", "Rate"),
+        show="headings", height=5
+    )
+    for col, width in (("ID", 130), ("Name", 300), ("Present Days", 150), ("Rate", 130)):
+        student_table.heading(col, text=col)
+        student_table.column(col, width=width, anchor="center")
+    student_table.pack(fill="x")
+
+    refresh_analytics()
+
+
 # ---------------- ADMIN PANEL ----------------
 
 def admin_panel():
@@ -504,6 +658,11 @@ def admin_panel():
     tk.Button(
         buttons, text="Export CSV",
         command=export_csv
+    ).pack(side="left", padx=5)
+
+    tk.Button(
+        buttons, text="Attendance Analytics",
+        command=attendance_analytics
     ).pack(side="left", padx=5)
 
     refresh_records()
